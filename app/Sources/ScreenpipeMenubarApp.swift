@@ -18,6 +18,13 @@ struct ScreenpipeMenubarApp: App {
             PreferencesView()
         }
 
+        // The main client window (Search/Timeline/Chat/Status/Settings). Opened on demand from
+        // the popover; the app stays a menu bar accessory, so this shows only when asked.
+        Window("screenpipe", id: "main") {
+            MainWindowView()
+        }
+        .defaultSize(width: 900, height: 600)
+
         Window("About screenpipe-menubar", id: "about") {
             AboutView()
         }

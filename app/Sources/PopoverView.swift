@@ -14,6 +14,7 @@ struct PopoverView: View {
             systemCard
             privacyCard
             storageCard
+            openEntry
             footer
         }
         .padding(16)
@@ -167,6 +168,22 @@ struct PopoverView: View {
 
     private var storageUsedText: String {
         ByteCountFormatter.string(fromByteCount: monitor.storageBytes, countStyle: .file) + " used"
+    }
+
+    // MARK: open the main window
+
+    // The headline entry: opens the real client window (Search/Timeline/Chat/Status/Settings).
+    // NSApp.activate brings the accessory app forward so the window is focused on open.
+    private var openEntry: some View {
+        Button {
+            NSApp.activate(ignoringOtherApps: true)
+            openWindow(id: "main")
+        } label: {
+            Label("Open screenpipe", systemImage: "rectangle.stack")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
     }
 
     // MARK: footer
