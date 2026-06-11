@@ -4,6 +4,7 @@ import SwiftUI
 // Storage card, then a quiet footer. Plain language throughout; one accent color at a time.
 struct PopoverView: View {
     @ObservedObject var monitor: HealthMonitor
+    @Environment(\.openWindow) private var openWindow
 
     private let storageBudget: Int64 = 10 * 1024 * 1024 * 1024  // 10 GB soft reference for the bar
 
@@ -171,15 +172,30 @@ struct PopoverView: View {
     // MARK: footer
 
     private var footer: some View {
-        HStack {
-            Button("Statistics\u{2026}") {
-                NSWorkspace.shared.open(URL(fileURLWithPath: Backend.dataDir))
+        HStack(spacing: 14) {
+            Button("Settings\u{2026}") { openSettings() }
+            Button("About") {
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "about")
             }
             Spacer()
             Button("Quit") { NSApplication.shared.terminate(nil) }
         }
         .buttonStyle(.link)
         .font(.caption)
+    }
+
+    // Open the Settings scene from an accessory (menu-bar) app. The selector was renamed
+    // across macOS versions, so try the current one then fall back.
+    private func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        let current = Selector(("showSettingsWindow:"))
+        let legacy = Selector(("showPreferencesWindow:"))
+        if NSApp.responds(to: current) {
+            NSApp.sendAction(current, to: nil, from: nil)
+        } else {
+            NSApp.sendAction(legacy, to: nil, from: nil)
+        }
     }
 }
 

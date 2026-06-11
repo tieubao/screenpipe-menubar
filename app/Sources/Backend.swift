@@ -32,6 +32,10 @@ enum Backend {
     @discardableResult
     static func mcpSetup() -> Bool { run(url(screenpipeBin), ["mcp", "setup"]).ok }
 
+    // Safe, arg-free maintenance: flush the WAL into the main DB file. No data is deleted.
+    @discardableResult
+    static func optimizeDatabase() -> Bool { run(url(screenpipeBin), ["backup", "checkpoint"]).ok }
+
     private static func url(_ path: String) -> URL { URL(fileURLWithPath: path) }
 
     @discardableResult
