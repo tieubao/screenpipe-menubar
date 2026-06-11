@@ -54,18 +54,29 @@ enum SearchClient {
         URL(string: "http://localhost:\(port)")!
     }
 
-    // Build the GET /search request URL with the documented query params.
+    // Build the GET /search request URL with the documented query params. Optional start/end
+    // (ISO8601) scope a time window, used by the Timeline scrubber.
     static func searchURL(base: URL, query: String, contentType: SearchContentType,
-                          limit: Int = 30, offset: Int = 0) -> URL {
+                          limit: Int = 30, offset: Int = 0,
+                          startTime: Date? = nil, endTime: Date? = nil) -> URL {
         var comps = URLComponents(url: base.appendingPathComponent("search"),
                                   resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
+        var items = [
             URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "content_type", value: contentType.apiValue),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "offset", value: String(offset)),
         ]
+        let iso = ISO8601DateFormatter()
+        if let startTime { items.append(URLQueryItem(name: "start_time", value: iso.string(from: startTime))) }
+        if let endTime { items.append(URLQueryItem(name: "end_time", value: iso.string(from: endTime))) }
+        comps.queryItems = items
         return comps.url!
+    }
+
+    // The frame image endpoint: screenpipe serves a captured frame by id at GET /frames/{id}.
+    static func frameImageURL(port: Int, frameId: Int) -> URL {
+        baseURL(port: port).appendingPathComponent("frames").appendingPathComponent(String(frameId))
     }
 
     // Decode a raw /search payload into UI rows. Pure + public so the fixture check can call it.
@@ -99,6 +110,22 @@ enum SearchClient {
             throw SearchError.badStatus(http.statusCode)
         }
         return try decode(data)
+    }
+
+    // Captured OCR frames in a time window, ascending by time, for the Timeline scrubber. Empty
+    // query = all OCR in range. Reuses /search with start_time/end_time.
+    static func framesInRange(port: Int, token: String?, start: Date, end: Date,
+                              limit: Int = 500) async throws -> [SearchHit] {
+        let url = searchURL(base: baseURL(port: port), query: "", contentType: .ocr,
+                            limit: limit, startTime: start, endTime: end)
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 15
+        if let token, !token.isEmpty { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        let (data, response) = try await URLSession.shared.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw SearchError.badStatus(http.statusCode)
+        }
+        return try decode(data).sorted { $0.timestamp < $1.timestamp }
     }
 
     // MARK: - wire DTOs

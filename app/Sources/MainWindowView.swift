@@ -60,7 +60,7 @@ struct MainWindowView: View {
     private func detail(for section: ClientSection) -> some View {
         switch section {
         case .search:   SearchView()
-        case .timeline: TimelineSurface()
+        case .timeline: TimelineView()
         case .chat:     ChatSurface()
         case .status:   StatusSurface()
         case .settings: SettingsSurface()
@@ -85,13 +85,6 @@ private struct SurfaceStub: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle(title)
-    }
-}
-
-struct TimelineSurface: View {
-    var body: some View {
-        SurfaceStub(title: "Timeline", systemImage: "clock",
-                    note: "Scrub captured frames by time.")
     }
 }
 
