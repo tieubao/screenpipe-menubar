@@ -1,0 +1,23 @@
+# Captured data + local state never belong in the repo.
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.screenpipe/
+.DS_Store
+
+# Redaction model files auto-download from HuggingFace at runtime; do not vendor.
+models/
+*.onnx
+*.safetensors
+
+# Rendered per-host config (secrets-adjacent paths, host-specific).
+config
+!config.example
+
+# Swift build output (slice 2).
+.build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+
+# Fixtures: keep the generator, not generated dbs.
+fixtures/*.sqlite
