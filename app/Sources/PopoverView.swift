@@ -1,0 +1,167 @@
+import SwiftUI
+
+// The full popover (MenuBarExtra .window style). Leads with state, then a Privacy card and a
+// Storage card, then a quiet footer. Plain language throughout; one accent color at a time.
+struct PopoverView: View {
+    @ObservedObject var monitor: HealthMonitor
+
+    private let storageBudget: Int64 = 10 * 1024 * 1024 * 1024  // 10 GB soft reference for the bar
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            privacyCard
+            storageCard
+            footer
+        }
+        .padding(16)
+        .frame(width: 300)
+        .onAppear { monitor.refreshDetails() }
+    }
+
+    // MARK: state header (Control-Center style)
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Circle()
+                .fill(Color(nsColor: monitor.state.color))
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(monitor.state.label)
+                    .font(.headline)
+                Text(monitor.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            inlineControls
+        }
+    }
+
+    @ViewBuilder
+    private var inlineControls: some View {
+        if monitor.state == .fail {
+            Button("Start") { monitor.start() }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        } else {
+            HStack(spacing: 6) {
+                Button("Pause") { monitor.pause(minutes: 60) }
+                Button("Stop") { monitor.stop() }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    // MARK: privacy card
+
+    private var privacyCard: some View {
+        Card(title: "Privacy") {
+            Row(label: "Redaction", value: "On, on-device")
+            Divider()
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(cleanLabel).font(.callout)
+                    Text("Leftover secrets in the local index")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                Spacer()
+                cleanControls
+            }
+        }
+    }
+
+    private var cleanLabel: String {
+        switch monitor.leftoverCount {
+        case .none:        return "Checking\u{2026}"
+        case .some(0):     return "Nothing to clean"
+        case .some(let n): return "\(n) item\(n == 1 ? "" : "s") to clean"
+        }
+    }
+
+    @ViewBuilder
+    private var cleanControls: some View {
+        if monitor.cleaning {
+            ProgressView().controlSize(.small)
+        } else if (monitor.leftoverCount ?? 0) > 0 {
+            Button("Clean") { monitor.clean() }
+                .buttonStyle(.borderedProminent)
+                .tint(Color(nsColor: CaptureState.attention.color))
+                .controlSize(.small)
+        } else {
+            Button("Check") { monitor.refreshDetails() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+    }
+
+    // MARK: storage card
+
+    private var storageCard: some View {
+        Card(title: "Storage") {
+            ProgressView(value: storageFraction)
+                .tint(.accentColor)
+            HStack {
+                Text(storageUsedText).font(.callout)
+                Spacer()
+                Text("Keeps \(monitor.retentionDays) days")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Row(label: "Last activity", value: monitor.lastActivity)
+        }
+    }
+
+    private var storageFraction: Double {
+        guard storageBudget > 0 else { return 0 }
+        return min(1, Double(monitor.storageBytes) / Double(storageBudget))
+    }
+
+    private var storageUsedText: String {
+        ByteCountFormatter.string(fromByteCount: monitor.storageBytes, countStyle: .file) + " used"
+    }
+
+    // MARK: footer
+
+    private var footer: some View {
+        HStack {
+            Button("Statistics\u{2026}") {
+                NSWorkspace.shared.open(URL(fileURLWithPath: Backend.dataDir))
+            }
+            Spacer()
+            Button("Quit") { NSApplication.shared.terminate(nil) }
+        }
+        .buttonStyle(.link)
+        .font(.caption)
+    }
+}
+
+// MARK: - reusable pieces
+
+private struct Card<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            content
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+private struct Row: View {
+    let label: String
+    let value: String
+    var body: some View {
+        HStack {
+            Text(label).font(.callout)
+            Spacer()
+            Text(value).font(.callout).foregroundStyle(.secondary)
+        }
+    }
+}
