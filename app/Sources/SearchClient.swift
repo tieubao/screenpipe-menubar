@@ -43,7 +43,12 @@ enum SearchError: Error, LocalizedError {
     case decode(String)
     var errorDescription: String? {
         switch self {
-        case .badStatus(let c): return "screenpipe API returned HTTP \(c)."
+        case .badStatus(let c):
+            if c == 401 || c == 403 {
+                return "screenpipe needs an API token (the local API has auth on). It is read from "
+                    + "`screenpipe auth token`; if that is empty, set SCREENPIPE_API_TOKEN in the config."
+            }
+            return "screenpipe API returned HTTP \(c)."
         case .decode(let m):    return "Could not read the search response: \(m)"
         }
     }
@@ -75,8 +80,15 @@ enum SearchClient {
     }
 
     // The frame image endpoint: screenpipe serves a captured frame by id at GET /frames/{id}.
-    static func frameImageURL(port: Int, frameId: Int) -> URL {
-        baseURL(port: port).appendingPathComponent("frames").appendingPathComponent(String(frameId))
+    // When api-auth is on, AsyncImage cannot set a bearer header, so the token is passed as the
+    // `api_key` query param (screenpipe accepts it on /frames).
+    static func frameImageURL(port: Int, frameId: Int, token: String? = nil) -> URL {
+        let base = baseURL(port: port).appendingPathComponent("frames")
+            .appendingPathComponent(String(frameId))
+        guard let token, !token.isEmpty,
+              var comps = URLComponents(url: base, resolvingAgainstBaseURL: false) else { return base }
+        comps.queryItems = [URLQueryItem(name: "api_key", value: token)]
+        return comps.url ?? base
     }
 
     // Decode a raw /search payload into UI rows. Pure + public so the fixture check can call it.

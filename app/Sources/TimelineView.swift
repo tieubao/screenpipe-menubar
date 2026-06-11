@@ -12,6 +12,7 @@ struct TimelineView: View {
     @State private var displayIndex: Int = 0          // debounced index that drives the image load
     @State private var phase: Phase = .idle
     @State private var debounceTask: Task<Void, Never>?
+    @State private var apiToken: String?              // for the frame-image query param under auth
 
     enum Phase: Equatable { case idle, loading, empty, loaded; case error(String) }
 
@@ -64,7 +65,7 @@ struct TimelineView: View {
     private var framePane: some View {
         VStack(spacing: 8) {
             if let frame = current, let id = frame.frameId {
-                AsyncImage(url: SearchClient.frameImageURL(port: configuredPort(), frameId: id)) { img in
+                AsyncImage(url: SearchClient.frameImageURL(port: configuredPort(), frameId: id, token: apiToken)) { img in
                     img.resizable().aspectRatio(contentMode: .fit)
                 } placeholder: {
                     ZStack {
@@ -148,9 +149,9 @@ struct TimelineView: View {
     @MainActor
     private func loadWindow(around center: Date, span: TimeInterval) async {
         phase = .loading
-        let cfg = ConfigStore.read()
-        let port = Int(cfg["SCREENPIPE_PORT"] ?? "") ?? 3030
-        let token = cfg["SCREENPIPE_API_TOKEN"]
+        let port = Int(ConfigStore.read()["SCREENPIPE_PORT"] ?? "") ?? 3030
+        let token = await Task.detached { Backend.apiToken() }.value
+        apiToken = token
         do {
             let result = try await SearchClient.framesInRange(
                 port: port, token: token,

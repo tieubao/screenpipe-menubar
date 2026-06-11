@@ -32,6 +32,25 @@ enum Backend {
     @discardableResult
     static func mcpSetup() -> Bool { run(url(screenpipeBin), ["mcp", "setup"]).ok }
 
+    // The screenpipe API bearer token. screenpipe's local API has auth ON by default, so Search /
+    // Timeline / Chat need this or they get HTTP 403. Resolution: the config override
+    // (SCREENPIPE_API_TOKEN) first, else `screenpipe auth token`. Cached for the session; nil means
+    // api-auth is off (no token needed). Runs off the main thread at call sites.
+    private static var tokenResolved = false
+    private static var tokenValue: String?
+    static func apiToken() -> String? {
+        if tokenResolved { return tokenValue }
+        if let cfg = readConfig("SCREENPIPE_API_TOKEN"), !cfg.isEmpty {
+            tokenValue = cfg
+        } else {
+            let out = run(url(screenpipeBin), ["auth", "token"]).out
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            tokenValue = out.isEmpty ? nil : out
+        }
+        tokenResolved = true
+        return tokenValue
+    }
+
     // Safe, arg-free maintenance: flush the WAL into the main DB file. No data is deleted.
     @discardableResult
     static func optimizeDatabase() -> Bool { run(url(screenpipeBin), ["backup", "checkpoint"]).ok }

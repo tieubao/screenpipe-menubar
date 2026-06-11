@@ -103,9 +103,8 @@ struct SearchView: View {
     @MainActor
     private func runSearch(_ q: String) async {
         phase = .loading
-        let cfg = ConfigStore.read()
-        let port = Int(cfg["SCREENPIPE_PORT"] ?? "") ?? 3030
-        let token = cfg["SCREENPIPE_API_TOKEN"]
+        let port = Int(ConfigStore.read()["SCREENPIPE_PORT"] ?? "") ?? 3030
+        let token = await Task.detached { Backend.apiToken() }.value   // config or `screenpipe auth token`
         do {
             let results = try await SearchClient.search(port: port, token: token,
                                                         query: q, contentType: contentType)

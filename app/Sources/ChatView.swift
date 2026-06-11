@@ -109,9 +109,8 @@ struct ChatView: View {
     @MainActor
     private func answer(_ question: String) async {
         defer { sending = false }
-        let cfg = ConfigStore.read()
-        let port = Int(cfg["SCREENPIPE_PORT"] ?? "") ?? 3030
-        let token = cfg["SCREENPIPE_API_TOKEN"]
+        let port = Int(ConfigStore.read()["SCREENPIPE_PORT"] ?? "") ?? 3030
+        let token = await Task.detached { Backend.apiToken() }.value
         // 1. retrieve grounding moments from the LOCAL /search API
         var context: [SearchHit] = []
         do { context = try await SearchClient.search(port: port, token: token, query: question,
