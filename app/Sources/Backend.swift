@@ -16,6 +16,24 @@ enum Backend {
         return (NSHomeDirectory() as NSString).appendingPathComponent(".screenpipe")
     }
 
+    // The screenpipe CLI itself (direct Rust binary, else PATH), for status/doctor/mcp.
+    static var screenpipeBin: String {
+        let direct = (NSHomeDirectory() as NSString)
+            .appendingPathComponent(".cache/.bun/install/global/node_modules/@screenpipe/cli-darwin-arm64/bin/screenpipe")
+        if FileManager.default.isExecutableFile(atPath: direct) { return direct }
+        for p in ["\(NSHomeDirectory())/.cache/.bun/bin/screenpipe", "/opt/homebrew/bin/screenpipe"] {
+            if FileManager.default.isExecutableFile(atPath: p) { return p }
+        }
+        return direct
+    }
+
+    static func statusReport() -> StatusReport { ReportParser.status(run(url(screenpipeBin), ["status"]).out) }
+    static func doctorReport() -> DoctorReport { ReportParser.doctor(run(url(screenpipeBin), ["doctor"]).out) }
+    @discardableResult
+    static func mcpSetup() -> Bool { run(url(screenpipeBin), ["mcp", "setup"]).ok }
+
+    private static func url(_ path: String) -> URL { URL(fileURLWithPath: path) }
+
     @discardableResult
     static func ctl(_ args: String...) -> Bool {
         run(URL(fileURLWithPath: ctlPath), args).ok

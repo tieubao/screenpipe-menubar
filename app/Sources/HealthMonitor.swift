@@ -11,9 +11,15 @@ final class HealthMonitor: ObservableObject {
 
     @Published private(set) var storageBytes: Int64 = 0
     @Published private(set) var retentionDays: Int = 14
+    @Published private(set) var monitors: [String] = []
+    @Published private(set) var status = StatusReport()
+    @Published private(set) var doctor = DoctorReport()
 
-    // nil = checking; otherwise the number of leftover secrets the cleaner would remove.
+    // The slow leftover-secret scan is cached: nil = never checked yet; otherwise the count
+    // from the last scan, with when it ran. It does NOT re-run on every popover open.
     @Published private(set) var leftoverCount: Int? = nil
+    @Published private(set) var lastChecked: Date? = nil
+    @Published private(set) var checking = false
     @Published private(set) var cleaning = false
 
     private let port: Int
@@ -47,21 +53,41 @@ final class HealthMonitor: ObservableObject {
                 let message = (json["message"] as? String) ?? ""
                 self.applyState(frame: frame, message: message)
                 self.lastActivity = Self.relativeTime(json["last_frame_timestamp"] as? String)
+                self.monitors = (json["monitors"] as? [String]) ?? []
             }
         }.resume()
     }
 
-    // Heavier reads (storage + leftover count), run on popover open and after a clean.
+    // Cheap-ish reads run on every popover open: storage, retention, status, doctor.
+    // The slow leftover scan is NOT here; it runs once (or on demand) via checkLeftovers().
     func refreshDetails() {
         work.async { [weak self] in
             let size = Backend.dataSizeBytes()
             let days = Backend.retentionDays()
-            let count = Backend.itemsToCleanCount()
+            let stat = Backend.statusReport()
+            let doc = Backend.doctorReport()
             Task { @MainActor in
                 guard let self else { return }
                 self.storageBytes = size
                 self.retentionDays = days
+                self.status = stat
+                self.doctor = doc
+            }
+        }
+        if lastChecked == nil { checkLeftovers() }   // first open only; cached thereafter
+    }
+
+    // The slow scan over the live index. Explicit (the "Check" button) or first-ever open.
+    func checkLeftovers() {
+        guard !checking else { return }
+        checking = true
+        work.async { [weak self] in
+            let count = Backend.itemsToCleanCount()
+            Task { @MainActor in
+                guard let self else { return }
                 self.leftoverCount = count
+                self.lastChecked = Date()
+                self.checking = false
             }
         }
     }
@@ -74,10 +100,13 @@ final class HealthMonitor: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.leftoverCount = count
+                self.lastChecked = Date()
                 self.cleaning = false
             }
         }
     }
+
+    func setupMCP() { work.async { Backend.mcpSetup() } }
 
     func start() { Backend.ctl("start"); refresh() }
     func stop()  { Backend.ctl("stop"); refresh() }
@@ -104,12 +133,16 @@ final class HealthMonitor: ObservableObject {
 
     static func relativeTime(_ iso: String?) -> String {
         guard let iso, let date = ISO8601DateFormatter().date(from: iso) else { return "\u{2014}" }
+        return relativeAge(date)
+    }
+
+    static func relativeAge(_ date: Date) -> String {
         let secs = max(0, Int(Date().timeIntervalSince(date)))
         switch secs {
-        case 0..<60:     return "just now"
-        case 60..<3600:  return "\(secs / 60) min ago"
+        case 0..<60:       return "just now"
+        case 60..<3600:    return "\(secs / 60) min ago"
         case 3600..<86400: return "\(secs / 3600) hr ago"
-        default:         return "\(secs / 86400) d ago"
+        default:           return "\(secs / 86400) d ago"
         }
     }
 

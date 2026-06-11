@@ -10,6 +10,7 @@ struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            systemCard
             privacyCard
             storageCard
             footer
@@ -63,7 +64,7 @@ struct PopoverView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(cleanLabel).font(.callout)
-                    Text("Leftover secrets in the local index")
+                    Text(cleanCaption)
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -73,16 +74,24 @@ struct PopoverView: View {
     }
 
     private var cleanLabel: String {
+        if monitor.checking && monitor.leftoverCount == nil { return "Checking\u{2026}" }
         switch monitor.leftoverCount {
-        case .none:        return "Checking\u{2026}"
+        case .none:        return "Not checked yet"
         case .some(0):     return "Nothing to clean"
         case .some(let n): return "\(n) item\(n == 1 ? "" : "s") to clean"
         }
     }
 
+    private var cleanCaption: String {
+        if let checked = monitor.lastChecked {
+            return "Checked \(HealthMonitor.relativeAge(checked))"
+        }
+        return "Leftover secrets in the local index"
+    }
+
     @ViewBuilder
     private var cleanControls: some View {
-        if monitor.cleaning {
+        if monitor.cleaning || monitor.checking {
             ProgressView().controlSize(.small)
         } else if (monitor.leftoverCount ?? 0) > 0 {
             Button("Clean") { monitor.clean() }
@@ -90,9 +99,47 @@ struct PopoverView: View {
                 .tint(Color(nsColor: CaptureState.attention.color))
                 .controlSize(.small)
         } else {
-            Button("Check") { monitor.refreshDetails() }
+            Button("Check") { monitor.checkLeftovers() }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+        }
+    }
+
+    // MARK: system card (readiness + capture stats + integration)
+
+    private var systemCard: some View {
+        Card(title: "System") {
+            HStack {
+                Circle()
+                    .fill(Color(nsColor: monitor.doctor.allPassed ? CaptureState.ok.color
+                                                                   : CaptureState.attention.color))
+                    .frame(width: 8, height: 8)
+                Text(monitor.doctor.summary).font(.callout)
+                Spacer()
+                Button("Check") { monitor.refreshDetails() }
+                    .buttonStyle(.bordered).controlSize(.small)
+            }
+            if !monitor.doctor.allPassed && !monitor.doctor.checks.isEmpty {
+                ForEach(monitor.doctor.checks.filter { !$0.ok }) { c in
+                    Text("\u{2022} \(c.name)").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Divider()
+            Row(label: "Frames captured", value: monitor.status.frames > 0
+                ? "\(monitor.status.frames)" : "\u{2014}")
+            Row(label: monitor.monitors.count == 1 ? "Display" : "Displays",
+                value: monitor.monitors.isEmpty ? "\u{2014}" : monitor.monitors.joined(separator: ", "))
+            Divider()
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Claude integration").font(.callout)
+                    Text("Search your history from Claude (MCP)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Set up") { monitor.setupMCP() }
+                    .buttonStyle(.bordered).controlSize(.small)
+            }
         }
     }
 
