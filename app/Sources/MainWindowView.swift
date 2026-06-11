@@ -63,38 +63,11 @@ struct MainWindowView: View {
         switch section {
         case .search:   SearchView()
         case .timeline: TimelineView()
-        case .chat:     ChatSurface()
+        case .chat:     ChatView()
         case .status:   StatusView()
         case .pipes:    PipesView()
         case .settings: SettingsLLMView()
         }
-    }
-}
-
-// MARK: - stub surfaces (each grown by its own sub-goal)
-
-private struct SurfaceStub: View {
-    let title: String
-    let systemImage: String
-    let note: String
-
-    var body: some View {
-        VStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(.secondary)
-            Text(title).font(.title2.weight(.semibold))
-            Text(note).font(.callout).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationTitle(title)
-    }
-}
-
-struct ChatSurface: View {
-    var body: some View {
-        SurfaceStub(title: "Chat", systemImage: "bubble.left.and.bubble.right",
-                    note: "Ask questions over your history. Local by default.")
     }
 }
 
