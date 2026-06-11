@@ -1,0 +1,19 @@
+# screenpipe-menubar capture config (example).
+# Copy to ~/.config/screenpipe-menubar/config (install.sh does this) and edit.
+# This file is sourced by bin/screenpipe-capture as plain shell; keep it shell-safe.
+
+# How many days of captured media/text to keep before automatic pruning.
+SCREENPIPE_RETENTION_DAYS=14
+
+# OCR languages, space-separated. Add your own, e.g. "english vietnamese".
+SCREENPIPE_LANGUAGES="english"
+
+# Extra windows to exclude from capture, beyond the built-in password-manager / crypto
+# wallet / banking defaults. Space-separated; each value is a screenpipe --ignored-windows
+# matcher (an app/window-title substring, "App::" matches by app name). Examples:
+#   SCREENPIPE_EXTRA_IGNORED_WINDOWS="MyBank:: 'Tax Software' Signal::"
+SCREENPIPE_EXTRA_IGNORED_WINDOWS=""
+
+# Override the bundled secret-pattern directory used by scrub-elements.py.
+# Default = <repo>/patterns. Usually leave unset.
+# SCREENPIPE_PATTERNS_DIR=""

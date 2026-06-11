@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Hardened screenpipe capture launcher (the one command "Start" calls).
+# Bare-name + executable so it can also become a LaunchAgent (BTM-friendly).
+# Defense layers: exclude secret apps > don't persist typed/clipboard text > redact
+# on-device > encrypt at rest. Edit here; the menu bar / LaunchAgent picks it up.
+#
+# Quiet profile: CPU scales with screen-change rate (OCR + accessibility-tree walk per
+# capture), NOT with PII redaction (async, post-capture). Perceived jank comes from input
+# hooks contending with accessibility extraction, so:
+#   --prioritize-input-latency    input hooks try_lock; extraction yields to typing
+#   --disable-meeting-detector    kills a constant 5s process-enum + AX walk (unused)
+#   --min-capture-interval-ms     debounce floor; terminal streaming can't spam capture
+#   --video-quality low           cheaper x265; we consume OCR text, not pixels
+#                                 (OCR runs on the raw frame BEFORE encode, unaffected)
+#   --disable-telemetry           no Sentry egress
+#   --disable-{keyboard,clipboard}-capture  typed/copied secrets never persisted
+#                                 (AX tree + OCR still capture all on-screen text)
+#
+# Tunables (retention, languages, extra excluded apps/urls) live in config.example;
+# the installer renders a config the LaunchAgent sources. Defaults below are generic.
+export PATH="$HOME/.cache/.bun/bin:$HOME/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
+
+# Optional per-host config (rendered by install.sh). Sourced if present; never required.
+CONFIG="${SCREENPIPE_MENUBAR_CONFIG:-$HOME/.config/screenpipe-menubar/config}"
+# shellcheck source=/dev/null
+[ -f "$CONFIG" ] && . "$CONFIG"
+
+# Resolved at runtime, never stored: pipes running inside the daemon call back into the
+# local API (register_artifact), which 403s without the bearer token since api-auth is
+# enabled in the persisted store.
+export SCREENPIPE_API_KEY="$(screenpipe auth token 2>/dev/null | tr -d '[:space:]')"
+
+# Exec the real Rust binary directly, NOT the bun `screenpipe` node shim. The shim (a node
+# script that spawn()s this same binary) makes the macOS screen-recording indicator
+# attribute capture to "node" instead of "screenpipe", and adds a node parent process
+# (~33 MB) whose only job is signal forwarding (launchd already does that for the direct
+# binary). The Screen Recording TCC grant is per-binary, so the direct binary needs its OWN
+# Screen Recording grant; the node shim's grant does NOT transfer. Fall back to the PATH
+# shim if the package path moves.
+SP_BIN="$HOME/.cache/.bun/install/global/node_modules/@screenpipe/cli-darwin-arm64/bin/screenpipe"
+[ -x "$SP_BIN" ] || SP_BIN="$(command -v screenpipe)"
+
+# Generic privacy defaults: exclude password managers, crypto wallets, and banking windows
+# by title. Override / extend via SCREENPIPE_EXTRA_IGNORED_WINDOWS in the config.
+EXTRA_WINDOWS=()
+for w in ${SCREENPIPE_EXTRA_IGNORED_WINDOWS:-}; do EXTRA_WINDOWS+=(--ignored-windows "$w"); done
+RETENTION_DAYS="${SCREENPIPE_RETENTION_DAYS:-14}"
+LANGUAGES="${SCREENPIPE_LANGUAGES:-english}"
+LANG_ARGS=()
+for l in $LANGUAGES; do LANG_ARGS+=(--language "$l"); done
+
+exec "$SP_BIN" record \
+  --ignored-windows "1Password::"   --ignored-windows "Bitwarden::" \
+  --ignored-windows "KeePassXC::"   --ignored-windows "Banking" \
+  --ignored-windows "Ledger Live::" --ignored-windows "Trezor Suite::" \
+  --ignored-windows "Electrum::"    --ignored-windows "Exodus::" \
+  --ignored-windows "MetaMask"      --ignored-windows "Phantom Wallet" \
+  --ignored-windows "Rabby"         --ignored-windows "Recovery Phrase" \
+  "${EXTRA_WINDOWS[@]}" \
+  --use-pii-removal --async-pii-redaction --async-image-pii-redaction --pii-backend local \
+  --pii-redaction-labels secret,person,email,phone,address,id,sensitive,us_ssn,credit_card,iban \
+  --pause-on-drm-content \
+  --retention-days "$RETENTION_DAYS" --retention-mode media \
+  "${LANG_ARGS[@]}" \
+  --prioritize-input-latency \
+  --disable-meeting-detector \
+  --min-capture-interval-ms 1500 \
+  --video-quality low \
+  --disable-telemetry \
+  --disable-keyboard-capture \
+  --disable-clipboard-capture
