@@ -66,7 +66,7 @@ struct MainWindowView: View {
         case .chat:     ChatSurface()
         case .status:   StatusView()
         case .pipes:    PipesView()
-        case .settings: SettingsSurface()
+        case .settings: SettingsLLMView()
         }
     }
 }
@@ -98,9 +98,3 @@ struct ChatSurface: View {
     }
 }
 
-struct SettingsSurface: View {
-    var body: some View {
-        SurfaceStub(title: "Settings", systemImage: "gearshape",
-                    note: "Models, providers, and tokens.")
-    }
-}
