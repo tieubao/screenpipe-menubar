@@ -6,7 +6,7 @@ import SwiftUI
 // icon churn. Each section is a stub here; later sub-goals grow them in place.
 
 enum ClientSection: String, CaseIterable, Identifiable {
-    case search, timeline, chat, status, settings
+    case search, timeline, chat, status, pipes, settings
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum ClientSection: String, CaseIterable, Identifiable {
         case .timeline: return "Timeline"
         case .chat:     return "Chat"
         case .status:   return "Status"
+        case .pipes:    return "Pipes"
         case .settings: return "Settings"
         }
     }
@@ -26,6 +27,7 @@ enum ClientSection: String, CaseIterable, Identifiable {
         case .timeline: return "clock"
         case .chat:     return "bubble.left.and.bubble.right"
         case .status:   return "checkmark.shield"
+        case .pipes:    return "puzzlepiece"
         case .settings: return "gearshape"
         }
     }
@@ -63,6 +65,7 @@ struct MainWindowView: View {
         case .timeline: TimelineView()
         case .chat:     ChatSurface()
         case .status:   StatusView()
+        case .pipes:    PipesView()
         case .settings: SettingsSurface()
         }
     }

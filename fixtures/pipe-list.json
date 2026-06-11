@@ -1,0 +1,77 @@
+[
+  {
+    "config": {
+      "name": "standup-update",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "Standup Update",
+      "description": "What you did, what's next, and any blockers"
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "inbox-feeder",
+      "enabled": true,
+      "schedule": "daily"
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "video-export",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "Export Video Clip",
+      "description": "Create a video of your recent screen activity"
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "time-breakdown",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "Time Breakdown",
+      "description": "Where your time went \u2014 by app, project, and category"
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "meeting-summary",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "Meeting Summary",
+      "description": "Auto-summarizes the meeting that just ended and patches the summary back onto the meeting record (title + note)."
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "day-recap",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "Day Recap",
+      "description": "Today's accomplishments, key moments, and unfinished work"
+    },
+    "is_running": false,
+    "last_run": null
+  },
+  {
+    "config": {
+      "name": "ai-habits",
+      "enabled": true,
+      "schedule": "manual",
+      "title": "AI Habits",
+      "description": "How you use AI tools \u2014 patterns and insights"
+    },
+    "is_running": false,
+    "last_run": null
+  }
+]
