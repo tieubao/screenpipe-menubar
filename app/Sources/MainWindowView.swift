@@ -62,7 +62,7 @@ struct MainWindowView: View {
         case .search:   SearchView()
         case .timeline: TimelineView()
         case .chat:     ChatSurface()
-        case .status:   StatusSurface()
+        case .status:   StatusView()
         case .settings: SettingsSurface()
         }
     }
@@ -92,13 +92,6 @@ struct ChatSurface: View {
     var body: some View {
         SurfaceStub(title: "Chat", systemImage: "bubble.left.and.bubble.right",
                     note: "Ask questions over your history. Local by default.")
-    }
-}
-
-struct StatusSurface: View {
-    var body: some View {
-        SurfaceStub(title: "Status", systemImage: "checkmark.shield",
-                    note: "Redaction models, MCP, and capture status.")
     }
 }
 
