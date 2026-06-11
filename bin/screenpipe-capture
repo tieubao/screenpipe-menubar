@@ -49,6 +49,12 @@ LANGUAGES="${SCREENPIPE_LANGUAGES:-english}"
 LANG_ARGS=()
 for l in $LANGUAGES; do LANG_ARGS+=(--language "$l"); done
 
+# Optional API port / data dir. Unset = screenpipe defaults (3030, ~/.screenpipe). The
+# installer sets these to run an isolated test instance without touching a live recorder.
+SITE_ARGS=()
+[ -n "${SCREENPIPE_PORT:-}" ]     && SITE_ARGS+=(--port "$SCREENPIPE_PORT")
+[ -n "${SCREENPIPE_DATA_DIR:-}" ] && SITE_ARGS+=(--data-dir "$SCREENPIPE_DATA_DIR")
+
 exec "$SP_BIN" record \
   --ignored-windows "1Password::"   --ignored-windows "Bitwarden::" \
   --ignored-windows "KeePassXC::"   --ignored-windows "Banking" \
@@ -57,11 +63,13 @@ exec "$SP_BIN" record \
   --ignored-windows "MetaMask"      --ignored-windows "Phantom Wallet" \
   --ignored-windows "Rabby"         --ignored-windows "Recovery Phrase" \
   "${EXTRA_WINDOWS[@]}" \
+  "${SITE_ARGS[@]}" \
   --use-pii-removal --async-pii-redaction --async-image-pii-redaction --pii-backend local \
   --pii-redaction-labels secret,person,email,phone,address,id,sensitive,us_ssn,credit_card,iban \
   --pause-on-drm-content \
   --retention-days "$RETENTION_DAYS" --retention-mode media \
   "${LANG_ARGS[@]}" \
+  --disable-audio \
   --prioritize-input-latency \
   --disable-meeting-detector \
   --min-capture-interval-ms 1500 \

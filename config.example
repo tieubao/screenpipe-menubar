@@ -15,5 +15,11 @@ SCREENPIPE_LANGUAGES="english"
 SCREENPIPE_EXTRA_IGNORED_WINDOWS=""
 
 # Override the bundled secret-pattern directory used by scrub-elements.py.
-# Default = <repo>/patterns. Usually leave unset.
+# Default search: this var, then <repo>/patterns, then the installed share dir. Leave unset.
 # SCREENPIPE_PATTERNS_DIR=""
+
+# API port and data dir. Unset = screenpipe defaults (3030, ~/.screenpipe). Set these only
+# to run a second, isolated capture instance alongside an existing one (the installer uses
+# them for its self-test).
+# SCREENPIPE_PORT=3030
+# SCREENPIPE_DATA_DIR="$HOME/.screenpipe"

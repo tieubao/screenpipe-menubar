@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+  <!-- BTM-friendly: ProgramArguments[0] is the bare-name launcher (shebang + chmod +x),
+       NOT /bin/bash wrapping, so Login Items shows "screenpipe-capture" with the exec icon. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__PROGRAM__</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SCREENPIPE_MENUBAR_CONFIG</key>
+    <string>__CONFIG__</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__STDOUT__</string>
+  <key>StandardErrorPath</key>
+  <string>__STDERR__</string>
+</dict>
+</plist>

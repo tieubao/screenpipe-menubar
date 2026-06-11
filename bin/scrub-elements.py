@@ -34,9 +34,25 @@ import sqlite3
 import sys
 
 DB = os.path.expanduser("~/.screenpipe/db.sqlite")
-# Default to the patterns bundled next to this script's repo, not any user-global path.
-_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PATTERNS_DIR = os.environ.get("SCREENPIPE_PATTERNS_DIR", os.path.join(_REPO, "patterns"))
+
+
+def _patterns_dir():
+    """First existing patterns dir, in priority order: explicit env override, the copy
+    bundled next to a git clone (<repo>/patterns), then the installed share locations."""
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates = [
+        os.environ.get("SCREENPIPE_PATTERNS_DIR"),
+        os.path.join(repo, "patterns"),
+        os.path.expanduser("~/.local/share/screenpipe-menubar/patterns"),
+        "/usr/local/share/screenpipe-menubar/patterns",
+    ]
+    for c in candidates:
+        if c and os.path.isdir(c):
+            return c
+    return os.path.join(repo, "patterns")  # report the repo-relative path in the warning
+
+
+PATTERNS_DIR = _patterns_dir()
 SG_JSON = os.path.join(PATTERNS_DIR, "secrets.json")
 BIP39 = os.path.join(PATTERNS_DIR, "bip39-english.txt")
 MARKER = "[REDACTED-SECRET]"
