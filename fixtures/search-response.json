@@ -1,0 +1,43 @@
+{
+  "data": [
+    {
+      "type": "OCR",
+      "content": {
+        "frame_id": 48213,
+        "text": "Quarterly revenue grew 18% to $4.2M, driven by the new pricing tier.",
+        "timestamp": "2026-06-11T22:14:07.512Z",
+        "file_path": "/Users/tieubao/.screenpipe/data/monitor_1_2026-06-11_22-14.mp4",
+        "offset_index": 0,
+        "app_name": "Safari",
+        "window_name": "Q2 board deck, Google Slides",
+        "tags": []
+      }
+    },
+    {
+      "type": "Audio",
+      "content": {
+        "transcription": "Let's push the launch to next Thursday so QA has the full week.",
+        "timestamp": "2026-06-11T21:03:55Z",
+        "file_path": "/Users/tieubao/.screenpipe/data/audio_2026-06-11_21-03.mp4",
+        "offset_index": 0,
+        "device_name": "MacBook Air Microphone",
+        "device_type": "input",
+        "tags": []
+      }
+    },
+    {
+      "type": "OCR",
+      "content": {
+        "frame_id": 48190,
+        "text": "git rebase --onto main feat/sp-client-01-window feat/sp-client-02-search",
+        "timestamp": "2026-06-11T20:41:12.004Z",
+        "file_path": "/Users/tieubao/.screenpipe/data/monitor_1_2026-06-11_20-41.mp4",
+        "offset_index": 3,
+        "app_name": "Ghostty",
+        "window_name": "screenpipe-menubar, zsh",
+        "tags": []
+      }
+    }
+  ],
+  "pagination": { "limit": 30, "offset": 0, "total": 3 }
+}

@@ -32,18 +32,24 @@ enum ClientSection: String, CaseIterable, Identifiable {
 }
 
 struct MainWindowView: View {
-    @State private var selection: ClientSection? = .search
+    @EnvironmentObject private var router: ClientRouter
+
+    // List wants a Binding<ClientSection?>; the router holds a non-optional section so other
+    // surfaces can route without unwrapping. Bridge the two here.
+    private var selection: Binding<ClientSection?> {
+        Binding(get: { router.section }, set: { if let s = $0 { router.section = s } })
+    }
 
     var body: some View {
         NavigationSplitView {
-            List(ClientSection.allCases, selection: $selection) { section in
+            List(ClientSection.allCases, selection: selection) { section in
                 Label(section.title, systemImage: section.systemImage)
                     .tag(section)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
             .navigationTitle("screenpipe")
         } detail: {
-            detail(for: selection ?? .search)
+            detail(for: router.section)
         }
         .frame(minWidth: 760, minHeight: 480)
     }
@@ -53,7 +59,7 @@ struct MainWindowView: View {
     @ViewBuilder
     private func detail(for section: ClientSection) -> some View {
         switch section {
-        case .search:   SearchSurface()
+        case .search:   SearchView()
         case .timeline: TimelineSurface()
         case .chat:     ChatSurface()
         case .status:   StatusSurface()
@@ -79,13 +85,6 @@ private struct SurfaceStub: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle(title)
-    }
-}
-
-struct SearchSurface: View {
-    var body: some View {
-        SurfaceStub(title: "Search", systemImage: "magnifyingglass",
-                    note: "Search your captured history. Coming next.")
     }
 }
 

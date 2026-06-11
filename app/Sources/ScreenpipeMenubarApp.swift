@@ -5,6 +5,7 @@ import SwiftUI
 @main
 struct ScreenpipeMenubarApp: App {
     @StateObject private var monitor = HealthMonitor()
+    @StateObject private var router = ClientRouter()
 
     var body: some Scene {
         MenuBarExtra {
@@ -22,6 +23,7 @@ struct ScreenpipeMenubarApp: App {
         // the popover; the app stays a menu bar accessory, so this shows only when asked.
         Window("screenpipe", id: "main") {
             MainWindowView()
+                .environmentObject(router)
         }
         .defaultSize(width: 900, height: 600)
 
