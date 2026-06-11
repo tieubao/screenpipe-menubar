@@ -73,22 +73,13 @@ enum Backend {
 
     // MARK: - helpers
 
+    // Spawn local tools with TCC responsibility DISCLAIMED (DisclaimedSpawn) so a spawned tool
+    // runs under its own TCC identity, not the GUI app's. This is what stops the Screen Recording
+    // re-prompt: `screenpipe doctor` probes screen recording, and without disclaiming, the app
+    // (un-granted) is the responsible process and macOS re-prompts on every popover open. All
+    // callees here are absolute-path local tools, so disclaiming is safe + correct for all of them.
     private static func run(_ url: URL, _ args: [String]) -> (ok: Bool, out: String) {
-        let proc = Process()
-        proc.executableURL = url
-        proc.arguments = args
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = Pipe()
-        do {
-            try proc.run()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            proc.waitUntilExit()
-            return (proc.terminationStatus == 0, String(decoding: data, as: UTF8.self))
-        } catch {
-            NSLog("Backend.run \(url.lastPathComponent) failed: \(error.localizedDescription)")
-            return (false, "")
-        }
+        DisclaimedSpawn.run(url.path, args)
     }
 
     private static func readConfig(_ key: String) -> String? {
