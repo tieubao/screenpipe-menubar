@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Capture control: start | stop | pause <min> | resume.
+# When the LaunchAgent (com.screenpipe.capture, KeepAlive=true) owns capture, a bare pkill
+# gets relaunched by launchd within seconds, so Stop/Pause must bootout the agent and
+# Start/Resume must bootstrap it. Falls back to the direct launcher / pkill when the agent
+# plist is absent (pre-grant machines, ad-hoc runs).
+set -uo pipefail
+export PATH="$HOME/.cache/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
+
+LABEL="com.screenpipe.capture"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+UID_="$(id -u)"
+CAPTURE="$HOME/.local/bin/screenpipe-capture"
+SENTINEL="$HOME/.screenpipe/.paused-until"
+
+agent_loaded() { launchctl print "gui/$UID_/$LABEL" >/dev/null 2>&1; }
+have_plist()   { [ -f "$PLIST" ]; }
+
+start() {
+  rm -f "$SENTINEL" 2>/dev/null
+  if have_plist; then
+    agent_loaded || launchctl bootstrap "gui/$UID_" "$PLIST"
+    launchctl kickstart "gui/$UID_/$LABEL" 2>/dev/null
+    echo "capture started (launchd agent)"
+  else
+    pgrep -f 'screenpipe record' >/dev/null || nohup "$CAPTURE" >/dev/null 2>&1 &
+    echo "capture started (direct launcher)"
+  fi
+}
+
+stop() {
+  if agent_loaded; then
+    launchctl bootout "gui/$UID_/$LABEL" 2>/dev/null
+    echo "capture stopped (agent booted out; Start re-bootstraps)"
+  else
+    pkill -f 'screenpipe record' 2>/dev/null
+    echo "capture stopped"
+  fi
+}
+
+pause() {
+  local mins="${1:-60}"
+  stop >/dev/null
+  python3 -c "import time;open('$SENTINEL','w').write(str(int(time.time())+$mins*60))" 2>/dev/null
+  # detached auto-resume (only if still paused at deadline)
+  nohup bash -c "
+    sleep $((mins*60))
+    [ -f '$SENTINEL' ] || exit 0
+    rm -f '$SENTINEL'
+    '$HOME/.local/bin/screenpipe-ctl' start >/dev/null 2>&1
+  " >/dev/null 2>&1 &
+  disown 2>/dev/null || true
+  echo "capture paused ${mins}m; will auto-resume."
+}
+
+case "${1:-}" in
+  start)  start ;;
+  stop)   stop ;;
+  pause)  pause "${2:-60}" ;;
+  resume) start ;;
+  *) echo "usage: screenpipe-ctl start|stop|pause [min]|resume"; exit 2 ;;
+esac

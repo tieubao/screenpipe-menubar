@@ -14,10 +14,10 @@ models/
 config
 !config.example
 
-# Swift build output (slice 2).
+# Swift build output (slice 2). The .xcodeproj is generated from project.yml by xcodegen.
 .build/
 DerivedData/
-*.xcodeproj/xcuserdata/
+*.xcodeproj
 
 # Fixtures: keep the generator, not generated dbs.
 fixtures/*.sqlite
